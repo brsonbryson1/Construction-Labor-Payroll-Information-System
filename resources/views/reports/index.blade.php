@@ -18,9 +18,9 @@
 
     {{-- Summary Stats --}}
     <div class="summary-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 20px;">
-        <div style="background: linear-gradient(135deg, #A99066 0%, #8B7355 100%); border-radius: 12px; padding: 20px; color: white;">
-            <p style="margin: 0; font-size: 14px; opacity: 0.9;">Total Payroll (All Time)</p>
-            <p style="margin: 8px 0 0 0; font-size: 28px; font-weight: 700;">₱{{ number_format($totalPaid, 2) }}</p>
+        <div style="background: white; border-radius: 12px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+            <p style="margin: 0; font-size: 14px; color: #6b7280;">Total Payroll (All Time)</p>
+            <p style="margin: 8px 0 0 0; font-size: 28px; font-weight: 700; color: #1f2937;">₱{{ number_format($totalPaid, 2) }}</p>
         </div>
         <div style="background: white; border-radius: 12px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
             <p style="margin: 0; font-size: 14px; color: #6b7280;">This Month Payroll</p>
@@ -36,8 +36,8 @@
     <div class="stats-grid" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 20px;">
         <div style="background: white; border-radius: 12px; padding: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
             <div style="display: flex; align-items: center; gap: 12px;">
-                <div style="width: 40px; height: 40px; background: rgba(169,144,102,0.15); border-radius: 8px; display: flex; align-items: center; justify-content: center;">
-                    <i class="bi bi-people" style="color: #A99066; font-size: 18px;"></i>
+                <div style="width: 40px; height: 40px; background: #e5e7eb; border-radius: 8px; display: flex; align-items: center; justify-content: center;">
+                    <i class="bi bi-people" style="color: #374151; font-size: 18px;"></i>
                 </div>
                 <div>
                     <p style="margin: 0; font-size: 12px; color: #6b7280;">Employees</p>
@@ -87,8 +87,8 @@
         </div>
         <div class="reports-grid" style="padding: 16px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;">
             <button onclick="generatePayrollReport()" class="report-btn" style="display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 16px 8px; background: #f9fafb; border-radius: 10px; border: 1px solid #e5e7eb; cursor: pointer; text-align: center; width: 100%;">
-                <div style="width: 48px; height: 48px; background: rgba(169,144,102,0.15); border-radius: 10px; display: flex; align-items: center; justify-content: center;">
-                    <i class="bi bi-file-earmark-spreadsheet" style="color: #A99066; font-size: 24px;"></i>
+                <div style="width: 48px; height: 48px; background: #e5e7eb; border-radius: 10px; display: flex; align-items: center; justify-content: center;">
+                    <i class="bi bi-file-earmark-spreadsheet" style="color: #374151; font-size: 24px;"></i>
                 </div>
                 <p style="margin: 0; font-size: 12px; font-weight: 600; color: #1f2937;">Payroll</p>
             </button>
@@ -141,7 +141,7 @@
         function generatePayrollReport() {
             const dates = getDefaultDates();
             Swal.fire({
-                title: '<span style="color: #1f2937;"><i class="bi bi-file-earmark-spreadsheet" style="color: #A99066;"></i> Payroll Report</span>',
+                title: '<span style="color: #1f2937;"><i class="bi bi-file-earmark-spreadsheet" style="color: #374151;"></i> Payroll Report</span>',
                 html: `
                     <div style="text-align: left;">
                         <label style="${labelStyle}">Start Date</label>
@@ -158,7 +158,7 @@
                 showCancelButton: true,
                 confirmButtonText: '<i class="bi bi-download"></i> Generate',
                 cancelButtonText: 'Cancel',
-                confirmButtonColor: '#A99066',
+                confirmButtonColor: '#374151',
                 cancelButtonColor: '#6b7280',
                 preConfirm: () => {
                     const start = document.getElementById('report_start').value;

@@ -51,6 +51,7 @@
                     <span>Dashboard</span>
                 </a>
             </li>
+            @if($role !== 'Admin')
             <li style="margin-bottom: 2px;">
                 <a href="/time-records" onclick="closeSidebar()" class="nav-link {{ request()->is('time-records') ? 'active' : '' }}" style="display: flex; align-items: center; gap: 12px; padding: 11px 12px; border-radius: 10px; text-decoration: none; font-size: 14px; transition: all 0.2s;
                     {{ request()->is('time-records') ? 'background: linear-gradient(135deg, #A99066 0%, #8B7355 100%); color: white; font-weight: 500; box-shadow: 0 2px 8px rgba(169,144,102,0.3);' : 'color: #4b5563;' }}">
@@ -69,6 +70,7 @@
                     <span>Payroll History</span>
                 </a>
             </li>
+            @endif
 
             @if($role === 'Admin' || $role === 'Manager')
                 <p class="nav-section-title" style="font-size: 10px; font-weight: 700; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.08em; margin: 20px 0 8px 12px;">Management</p>
@@ -121,6 +123,15 @@
                             <i class="bi bi-person-gear" style="font-size: 16px; {{ request()->is('users*') ? 'color: white;' : 'color: #A99066;' }}"></i>
                         </div>
                         <span>User Management</span>
+                    </a>
+                </li>
+                <li style="margin-bottom: 2px;">
+                    <a href="/settings" onclick="closeSidebar()" class="nav-link {{ request()->is('settings*') ? 'active' : '' }}" style="display: flex; align-items: center; gap: 12px; padding: 11px 12px; border-radius: 10px; text-decoration: none; font-size: 14px; transition: all 0.2s;
+                        {{ request()->is('settings*') ? 'background: linear-gradient(135deg, #A99066 0%, #8B7355 100%); color: white; font-weight: 500; box-shadow: 0 2px 8px rgba(169,144,102,0.3);' : 'color: #4b5563;' }}">
+                        <div style="width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; {{ request()->is('settings*') ? 'background: rgba(255,255,255,0.2);' : 'background: rgba(169,144,102,0.1);' }}">
+                            <i class="bi bi-gear" style="font-size: 16px; {{ request()->is('settings*') ? 'color: white;' : 'color: #A99066;' }}"></i>
+                        </div>
+                        <span>Settings</span>
                     </a>
                 </li>
             @endif

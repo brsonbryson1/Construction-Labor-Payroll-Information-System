@@ -7,6 +7,7 @@ use App\Http\Controllers\UserController;
 use App\Http\Controllers\PaystubController;
 use App\Http\Controllers\PayrollController;
 use App\Http\Controllers\ReportController;
+use App\Http\Controllers\SettingController;
 
 /*
 |--------------------------------------------------------------------------
@@ -70,6 +71,7 @@ Route::middleware([
         Route::get('/payroll', [PayrollController::class, 'index'])->name('payroll.index');
         Route::post('/payroll/generate', [PayrollController::class, 'generate'])->name('payroll.generate');
         Route::post('/payroll/generate/{id}', [PayrollController::class, 'generateForEmployee'])->name('payroll.generate.employee');
+        Route::post('/payroll/generate-custom', [PayrollController::class, 'generateCustom'])->name('payroll.generate.custom');
         Route::get('/payroll/preview/{id}', [PayrollController::class, 'preview'])->name('payroll.preview');
     });
 
@@ -93,5 +95,9 @@ Route::middleware([
         Route::post('/api/users', [UserController::class, 'store']);
         Route::put('/api/users/{id}', [UserController::class, 'update']);
         Route::delete('/api/users/{id}', [UserController::class, 'destroy']);
+
+        // Settings
+        Route::get('/settings', [SettingController::class, 'index'])->name('settings.index');
+        Route::post('/api/settings', [SettingController::class, 'update']);
     });
 });

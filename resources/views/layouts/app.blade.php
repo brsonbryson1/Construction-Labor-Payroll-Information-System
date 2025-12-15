@@ -7,6 +7,17 @@
 
     <title>{{ config('app.name', 'CLPIS') }}</title>
 
+    {{-- PWA Meta Tags --}}
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#A99066">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="CLPIS">
+    <link rel="apple-touch-icon" href="/pwa/ios/180.png">
+    <link rel="apple-touch-icon" sizes="152x152" href="/pwa/ios/152.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/pwa/ios/180.png">
+    <link rel="apple-touch-icon" sizes="167x167" href="/pwa/ios/167.png">
+
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">

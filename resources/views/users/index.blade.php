@@ -181,6 +181,15 @@
                             <option value="Manager">Manager</option>
                             <option value="Admin">Admin</option>
                         </select>
+                        <div style="margin-top: 8px; padding: 12px; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px;">
+                            <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; margin: 0;">
+                                <input type="checkbox" id="notify_user" style="width: 18px; height: 18px; accent-color: #A99066;">
+                                <span style="font-size: 13px; color: #374151;">
+                                    <strong>Notify user about this account</strong><br>
+                                    <small style="color: #6b7280;">Send welcome email with login credentials</small>
+                                </span>
+                            </label>
+                        </div>
                     </div>
                 `,
                 showCancelButton: true,
@@ -193,11 +202,17 @@
                     const email = document.getElementById('email').value;
                     const password = document.getElementById('password').value;
                     const role = document.getElementById('role').value;
+                    const notify_user = document.getElementById('notify_user').checked;
                     if (!name || !email || !password) { Swal.showValidationMessage('Please fill in all required fields'); return false; }
-                    return { name, email, password, role };
+                    return { name, email, password, role, notify_user };
                 }
             }).then((result) => {
                 if (result.isConfirmed) {
+                    // Show loading if sending email
+                    if (result.value.notify_user) {
+                        Swal.fire({ title: 'Creating user...', html: 'Sending welcome email...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
+                    }
+                    
                     fetch('/api/users', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
@@ -208,7 +223,18 @@
                         if (data.error) {
                             Swal.fire({ icon: 'error', title: 'Error', text: data.error, confirmButtonColor: '#A99066' });
                         } else {
-                            Swal.fire({ icon: 'success', title: 'Success!', text: 'User created successfully', confirmButtonColor: '#A99066' }).then(() => location.reload());
+                            let message = 'User created successfully';
+                            let icon = 'success';
+                            if (data.email_sent === true) {
+                                message += ' and welcome email sent!';
+                            } else if (data.email_sent === false && result.value.notify_user) {
+                                message += ' but email could not be sent.';
+                                if (data.email_error) {
+                                    message += '\n\nError: ' + data.email_error;
+                                }
+                                icon = 'warning';
+                            }
+                            Swal.fire({ icon: icon, title: icon === 'success' ? 'Success!' : 'Partial Success', text: message, confirmButtonColor: '#A99066' }).then(() => location.reload());
                         }
                     })
                     .catch(error => {

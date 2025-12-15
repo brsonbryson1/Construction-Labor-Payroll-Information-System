@@ -5,11 +5,21 @@
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 12px;">
         <div>
             <h2 style="margin: 0; font-size: 20px; font-weight: 700; color: #1f2937;">Payroll Processing</h2>
-            <p style="margin: 4px 0 0 0; font-size: 14px; color: #6b7280;">Generate and manage employee paychecks</p>
+            <p style="margin: 4px 0 0 0; font-size: 14px; color: #6b7280;">
+                Rate: ₱{{ number_format($hourlyRate, 2) }}/hr | Deductions: {{ $deductionPct }}%
+                @if(Auth::user()->role === 'Admin')
+                    <a href="/settings" style="color: #A99066; margin-left: 8px;"><i class="bi bi-gear"></i> Change</a>
+                @endif
+            </p>
         </div>
-        <button onclick="generatePayroll()" style="display: inline-flex; align-items: center; gap: 8px; background: #A99066; color: white; font-weight: 600; padding: 10px 20px; border-radius: 10px; border: none; cursor: pointer; font-size: 14px;">
-            <i class="bi bi-plus-lg"></i> Generate Payroll
-        </button>
+        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+            <button onclick="customPaycheck()" style="display: inline-flex; align-items: center; gap: 8px; background: white; color: #A99066; font-weight: 600; padding: 10px 20px; border-radius: 10px; border: 1px solid #A99066; cursor: pointer; font-size: 14px;">
+                <i class="bi bi-pencil-square"></i> Custom Paycheck
+            </button>
+            <button onclick="generatePayroll()" style="display: inline-flex; align-items: center; gap: 8px; background: #A99066; color: white; font-weight: 600; padding: 10px 20px; border-radius: 10px; border: none; cursor: pointer; font-size: 14px;">
+                <i class="bi bi-plus-lg"></i> Generate Payroll
+            </button>
+        </div>
     </div>
 
     {{-- Pay Period Selection --}}
@@ -69,9 +79,8 @@
                     $hoursThisMonth = \App\Models\TimeRecord::where('user_id', $employee->id)
                         ->whereMonth('clock_in', now()->month)
                         ->sum('hours_worked');
-                    $hourlyRate = 100;
                     $grossPay = $hoursThisMonth * $hourlyRate;
-                    $deductions = $grossPay * 0.1;
+                    $deductions = $grossPay * ($deductionPct / 100);
                     $netPay = $grossPay - $deductions;
                 @endphp
                 <div style="padding: 16px; border-bottom: 1px solid #f3f4f6;">
@@ -137,9 +146,8 @@
                             $hoursThisMonth = \App\Models\TimeRecord::where('user_id', $employee->id)
                                 ->whereMonth('clock_in', now()->month)
                                 ->sum('hours_worked');
-                            $hourlyRate = 100;
                             $grossPay = $hoursThisMonth * $hourlyRate;
-                            $deductions = $grossPay * 0.1;
+                            $deductions = $grossPay * ($deductionPct / 100);
                             $netPay = $grossPay - $deductions;
                         @endphp
                         <tr style="border-top: 1px solid #e5e7eb;">
@@ -212,14 +220,14 @@
                             </div>
                             <div style="display: flex; justify-content: space-between; padding: 12px 16px; border-bottom: 1px solid #e5e7eb;">
                                 <span style="color: #6b7280;">Hourly Rate</span>
-                                <span style="font-weight: 600; color: #1f2937;">₱100.00</span>
+                                <span style="font-weight: 600; color: #1f2937;">₱{{ number_format($hourlyRate, 2) }}</span>
                             </div>
                             <div style="display: flex; justify-content: space-between; padding: 12px 16px; border-bottom: 1px solid #e5e7eb;">
                                 <span style="color: #6b7280;">Gross Pay</span>
                                 <span style="font-weight: 600; color: #1f2937;">₱${gross.toLocaleString('en-PH', {minimumFractionDigits: 2})}</span>
                             </div>
                             <div style="display: flex; justify-content: space-between; padding: 12px 16px; border-bottom: 1px solid #e5e7eb;">
-                                <span style="color: #6b7280;">Deductions (10%)</span>
+                                <span style="color: #6b7280;">Deductions ({{ $deductionPct }}%)</span>
                                 <span style="font-weight: 600; color: #ef4444;">-₱${deductions.toLocaleString('en-PH', {minimumFractionDigits: 2})}</span>
                             </div>
                             <div style="display: flex; justify-content: space-between; padding: 14px 16px; background: rgba(169,144,102,0.1);">
@@ -276,6 +284,170 @@
                     })
                     .catch(error => {
                         Swal.fire({ icon: 'error', title: 'Error', text: 'Failed to generate payroll.', confirmButtonColor: '#A99066' });
+                    });
+                }
+            });
+        }
+
+        function customPaycheck() {
+            const startDate = document.getElementById('pay_start').value;
+            const endDate = document.getElementById('pay_end').value;
+            const payDate = document.getElementById('pay_date').value;
+
+            if (!startDate || !endDate || !payDate) {
+                Swal.fire({ icon: 'warning', title: 'Missing Dates', text: 'Please select pay period dates first.', confirmButtonColor: '#A99066' });
+                return;
+            }
+
+            // Build employee options
+            const employees = [
+                @foreach($employees as $emp)
+                { id: {{ $emp->id }}, name: '{{ $emp->name }}' },
+                @endforeach
+            ];
+            
+            let employeeOptions = employees.map(e => `<option value="${e.id}">${e.name}</option>`).join('');
+
+            Swal.fire({
+                title: '<i class="bi bi-pencil-square" style="color: #A99066;"></i> Custom Paycheck',
+                html: `
+                    <div style="text-align: left;">
+                        <p style="margin: 0 0 16px 0; font-size: 13px; color: #6b7280;">Create a custom paycheck for new employees or manual adjustments.</p>
+                        
+                        <div style="margin-bottom: 16px;">
+                            <label style="display: block; font-size: 12px; font-weight: 600; color: #374151; margin-bottom: 6px;">Employee</label>
+                            <select id="custom_employee" style="width: 100%; padding: 10px 12px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px;">
+                                <option value="">Select Employee</option>
+                                ${employeeOptions}
+                            </select>
+                        </div>
+                        
+                        <div style="margin-bottom: 16px;">
+                            <label style="display: block; font-size: 12px; font-weight: 600; color: #374151; margin-bottom: 6px;">Hours Worked</label>
+                            <input type="number" id="custom_hours" min="0" step="0.5" placeholder="e.g. 40" style="width: 100%; padding: 10px 12px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px;">
+                        </div>
+                        
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px;">
+                            <div>
+                                <label style="display: block; font-size: 12px; font-weight: 600; color: #374151; margin-bottom: 6px;">Hourly Rate (₱)</label>
+                                <input type="number" id="custom_rate" value="{{ $hourlyRate }}" min="1" step="0.01" style="width: 100%; padding: 10px 12px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px;">
+                            </div>
+                            <div>
+                                <label style="display: block; font-size: 12px; font-weight: 600; color: #374151; margin-bottom: 6px;">Deduction (%)</label>
+                                <input type="number" id="custom_deduction" value="{{ $deductionPct }}" min="0" max="100" step="0.1" style="width: 100%; padding: 10px 12px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px;">
+                            </div>
+                        </div>
+                        
+                        <div style="background: #f9fafb; border-radius: 8px; padding: 12px; margin-top: 16px;">
+                            <p style="margin: 0 0 8px 0; font-size: 11px; font-weight: 600; color: #6b7280; text-transform: uppercase;">Preview</p>
+                            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; text-align: center;">
+                                <div>
+                                    <p style="margin: 0; font-size: 10px; color: #9ca3af;">Gross</p>
+                                    <p id="custom_gross_preview" style="margin: 2px 0 0 0; font-size: 14px; font-weight: 700; color: #1f2937;">₱0.00</p>
+                                </div>
+                                <div>
+                                    <p style="margin: 0; font-size: 10px; color: #9ca3af;">Deductions</p>
+                                    <p id="custom_ded_preview" style="margin: 2px 0 0 0; font-size: 14px; font-weight: 700; color: #ef4444;">-₱0.00</p>
+                                </div>
+                                <div>
+                                    <p style="margin: 0; font-size: 10px; color: #9ca3af;">Net Pay</p>
+                                    <p id="custom_net_preview" style="margin: 2px 0 0 0; font-size: 14px; font-weight: 700; color: #16a34a;">₱0.00</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `,
+                showCancelButton: true,
+                confirmButtonText: '<i class="bi bi-check-lg"></i> Generate',
+                cancelButtonText: 'Cancel',
+                confirmButtonColor: '#A99066',
+                cancelButtonColor: '#6b7280',
+                width: '450px',
+                didOpen: () => {
+                    const hoursInput = document.getElementById('custom_hours');
+                    const rateInput = document.getElementById('custom_rate');
+                    const deductionInput = document.getElementById('custom_deduction');
+                    
+                    const updateCustomPreview = () => {
+                        const hours = parseFloat(hoursInput.value) || 0;
+                        const rate = parseFloat(rateInput.value) || 0;
+                        const dedPct = parseFloat(deductionInput.value) || 0;
+                        const gross = hours * rate;
+                        const ded = gross * (dedPct / 100);
+                        const net = gross - ded;
+                        document.getElementById('custom_gross_preview').textContent = '₱' + gross.toLocaleString('en-PH', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+                        document.getElementById('custom_ded_preview').textContent = '-₱' + ded.toLocaleString('en-PH', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+                        document.getElementById('custom_net_preview').textContent = '₱' + net.toLocaleString('en-PH', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+                    };
+                    
+                    // Add multiple event types for better responsiveness
+                    ['input', 'keyup', 'change'].forEach(event => {
+                        hoursInput.addEventListener(event, updateCustomPreview);
+                        rateInput.addEventListener(event, updateCustomPreview);
+                        deductionInput.addEventListener(event, updateCustomPreview);
+                    });
+                    
+                    // Initial calculation
+                    updateCustomPreview();
+                },
+                preConfirm: () => {
+                    const employeeId = document.getElementById('custom_employee').value;
+                    const hours = document.getElementById('custom_hours').value;
+                    if (!employeeId) {
+                        Swal.showValidationMessage('Please select an employee');
+                        return false;
+                    }
+                    if (!hours || hours <= 0) {
+                        Swal.showValidationMessage('Please enter hours worked');
+                        return false;
+                    }
+                    return {
+                        employee_id: employeeId,
+                        hours: hours,
+                        rate: document.getElementById('custom_rate').value,
+                        deduction_pct: document.getElementById('custom_deduction').value
+                    };
+                }
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    Swal.fire({ title: 'Generating...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
+                    
+                    fetch('/payroll/generate-custom', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
+                        body: JSON.stringify({
+                            employee_id: result.value.employee_id,
+                            hours: result.value.hours,
+                            hourly_rate: result.value.rate,
+                            deduction_pct: result.value.deduction_pct,
+                            start_date: startDate,
+                            end_date: endDate,
+                            pay_date: payDate
+                        })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Paycheck Generated!',
+                                text: data.message,
+                                showCancelButton: true,
+                                confirmButtonText: '<i class="bi bi-printer"></i> View Paystub',
+                                cancelButtonText: 'Close',
+                                confirmButtonColor: '#A99066'
+                            }).then((res) => {
+                                if (res.isConfirmed && data.paycheck) {
+                                    window.open('/paystub/' + data.paycheck.id + '/download', '_blank');
+                                }
+                                location.reload();
+                            });
+                        } else {
+                            Swal.fire({ icon: 'error', title: 'Error', text: data.message || 'Failed to generate paycheck', confirmButtonColor: '#A99066' });
+                        }
+                    })
+                    .catch(error => {
+                        Swal.fire({ icon: 'error', title: 'Error', text: 'Failed to generate paycheck.', confirmButtonColor: '#A99066' });
                     });
                 }
             });

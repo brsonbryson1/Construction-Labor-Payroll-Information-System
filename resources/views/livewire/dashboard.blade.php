@@ -99,18 +99,18 @@
         
         {{-- Desktop: All 12 months --}}
         <div id="chart-desktop" style="display: none; align-items: flex-end; justify-content: space-around; height: 180px; padding: 0 8px 20px 20px;">
-            @foreach($monthlyPayroll as $data)
+            @foreach($monthlyPayroll as $index => $data)
                 @php
                     $hasData = $data['total'] > 0;
                     $barHeight = $hasData ? max(($data['percentage'] / 100) * $maxHeight, 25) : 8;
                 @endphp
                 <div style="display: flex; flex-direction: column; align-items: center; flex: 1; max-width: 50px;">
                     @if($hasData)
-                        <span style="font-size: 8px; color: #6b7280; margin-bottom: 6px;">₱{{ number_format($data['total']/1000, 1) }}k</span>
+                        <span class="bar-value" style="font-size: 8px; color: #6b7280; margin-bottom: 6px; opacity: 0; transition: opacity 0.3s ease {{ $index * 0.05 + 0.5 }}s;">₱{{ number_format($data['total']/1000, 1) }}k</span>
                     @else
                         <span style="font-size: 8px; color: #d1d5db; margin-bottom: 6px;">—</span>
                     @endif
-                    <div style="position: relative; width: 28px; height: {{ $barHeight }}px;">
+                    <div class="chart-bar" data-height="{{ $barHeight }}" style="position: relative; width: 28px; height: 0; transition: height 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) {{ $index * 0.05 }}s;">
                         @if($hasData)
                             <div style="position: absolute; width: 28px; height: 100%; background: linear-gradient(180deg, #A99066 0%, #8B7355 100%); border-radius: 2px 2px 0 0;"></div>
                             <div style="position: absolute; top: -6px; left: 3px; width: 28px; height: 10px; background: #C4AD82; transform: skewX(-45deg); border-radius: 2px 2px 0 0;"></div>
@@ -125,6 +125,7 @@
         </div>
         
         {{-- Mobile: Last 6 months --}}
+        @php $mobileIndex = 0; @endphp
         <div id="chart-mobile" style="display: flex; align-items: flex-end; justify-content: space-around; height: 180px; padding: 0 8px 20px 20px;">
             @foreach($monthlyPayroll as $data)
                 @if(in_array($data['monthNum'], $mobileMonths))
@@ -134,11 +135,11 @@
                     @endphp
                     <div style="display: flex; flex-direction: column; align-items: center; flex: 1; max-width: 60px;">
                         @if($hasData)
-                            <span style="font-size: 9px; color: #6b7280; margin-bottom: 8px;">₱{{ number_format($data['total']/1000, 1) }}k</span>
+                            <span class="bar-value" style="font-size: 9px; color: #6b7280; margin-bottom: 8px; opacity: 0; transition: opacity 0.3s ease {{ $mobileIndex * 0.08 + 0.5 }}s;">₱{{ number_format($data['total']/1000, 1) }}k</span>
                         @else
                             <span style="font-size: 9px; color: #d1d5db; margin-bottom: 8px;">—</span>
                         @endif
-                        <div style="position: relative; width: 32px; height: {{ $barHeight }}px;">
+                        <div class="chart-bar" data-height="{{ $barHeight }}" style="position: relative; width: 32px; height: 0; transition: height 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) {{ $mobileIndex * 0.08 }}s;">
                             @if($hasData)
                                 <div style="position: absolute; width: 32px; height: 100%; background: linear-gradient(180deg, #A99066 0%, #8B7355 100%); border-radius: 2px 2px 0 0;"></div>
                                 <div style="position: absolute; top: -8px; left: 4px; width: 32px; height: 12px; background: #C4AD82; transform: skewX(-45deg); border-radius: 2px 2px 0 0;"></div>
@@ -149,6 +150,7 @@
                         </div>
                         <span style="font-size: 10px; color: {{ $hasData ? '#6b7280' : '#9ca3af' }}; margin-top: 8px; font-weight: 500;">{{ $data['month'] }}</span>
                     </div>
+                    @php $mobileIndex++; @endphp
                 @endif
             @endforeach
         </div>
@@ -252,4 +254,22 @@
         
         updateLayout();
         window.addEventListener('resize', updateLayout);
+        
+        // Animate chart bars on load
+        function animateChartBars() {
+            setTimeout(function() {
+                var bars = document.querySelectorAll('.chart-bar');
+                bars.forEach(function(bar) {
+                    var targetHeight = bar.getAttribute('data-height');
+                    bar.style.height = targetHeight + 'px';
+                });
+                
+                var values = document.querySelectorAll('.bar-value');
+                values.forEach(function(val) {
+                    val.style.opacity = '1';
+                });
+            }, 100);
+        }
+        
+        animateChartBars();
     </script>
