@@ -4,6 +4,7 @@ namespace App\Livewire;
 
 use Livewire\Component;
 use App\Models\TimeRecord;
+use App\Models\Setting;
 use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
 
@@ -12,9 +13,11 @@ class TimeRecords extends Component
     public $currentRecord = null;
     public $status = 'Ready to Clock In';
     public $message = '';
+    public $timeClockEnabled = true;
 
     public function mount()
     {
+        $this->timeClockEnabled = Setting::isTimeClockEnabled();
         $this->loadCurrentRecord();
     }
 
@@ -35,6 +38,12 @@ class TimeRecords extends Component
 
     public function clockIn()
     {
+        // Check if time clock is enabled
+        if (!Setting::isTimeClockEnabled()) {
+            $this->message = 'Time clock is currently disabled by administrator.';
+            return;
+        }
+
         // Check if already clocked in
         if ($this->currentRecord && !$this->currentRecord->clock_out) {
             $this->message = 'You are already clocked in!';
@@ -52,6 +61,12 @@ class TimeRecords extends Component
 
     public function clockOut()
     {
+        // Check if time clock is enabled
+        if (!Setting::isTimeClockEnabled()) {
+            $this->message = 'Time clock is currently disabled by administrator.';
+            return;
+        }
+
         if (!$this->currentRecord || $this->currentRecord->clock_out) {
             $this->message = 'You need to clock in first!';
             return;
@@ -72,6 +87,8 @@ class TimeRecords extends Component
 
     public function render()
     {
+        $this->timeClockEnabled = Setting::isTimeClockEnabled();
+        
         $history = TimeRecord::where('user_id', Auth::id())
             ->latest()
             ->limit(10)
@@ -79,6 +96,7 @@ class TimeRecords extends Component
 
         return view('livewire.time-records', [
             'history' => $history,
+            'timeClockEnabled' => $this->timeClockEnabled,
         ]);
     }
 }

@@ -17,6 +17,10 @@ class Paycheck extends Model
         'gross_pay',
         'net_pay',
         'total_deductions',
+        'regular_hours',
+        'overtime_hours',
+        'regular_pay',
+        'overtime_pay',
         'status',
         'file_path',
     ];

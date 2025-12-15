@@ -6,7 +6,7 @@
         <div>
             <h2 style="margin: 0; font-size: 20px; font-weight: 700; color: #1f2937;">Payroll Processing</h2>
             <p style="margin: 4px 0 0 0; font-size: 14px; color: #6b7280;">
-                Rate: ₱{{ number_format($hourlyRate, 2) }}/hr | Deductions: {{ $deductionPct }}%
+                Rate: ₱{{ number_format($hourlyRate, 2) }}/hr | OT: {{ $otMultiplier }}x after {{ $regularHours }}hrs | Deductions: {{ $deductionPct }}%
                 @if(Auth::user()->role === 'Admin')
                     <a href="/settings" style="color: #A99066; margin-left: 8px;"><i class="bi bi-gear"></i> Change</a>
                 @endif
@@ -79,7 +79,14 @@
                     $hoursThisMonth = \App\Models\TimeRecord::where('user_id', $employee->id)
                         ->whereMonth('clock_in', now()->month)
                         ->sum('hours_worked');
-                    $grossPay = $hoursThisMonth * $hourlyRate;
+                    // Calculate with overtime
+                    $workDays = now()->day;
+                    $maxRegularHours = $workDays * $regularHours;
+                    $regHrs = min($hoursThisMonth, $maxRegularHours);
+                    $otHrs = max(0, $hoursThisMonth - $maxRegularHours);
+                    $regularPay = $regHrs * $hourlyRate;
+                    $overtimePay = $otHrs * $hourlyRate * $otMultiplier;
+                    $grossPay = $regularPay + $overtimePay;
                     $deductions = $grossPay * ($deductionPct / 100);
                     $netPay = $grossPay - $deductions;
                 @endphp
@@ -98,7 +105,7 @@
                     <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 12px;">
                         <div>
                             <p style="margin: 0; font-size: 11px; color: #9ca3af; text-transform: uppercase;">Hours</p>
-                            <p style="margin: 2px 0 0 0; font-size: 14px; font-weight: 500; color: #1f2937;">{{ number_format($hoursThisMonth, 1) }} hrs</p>
+                            <p style="margin: 2px 0 0 0; font-size: 14px; font-weight: 500; color: #1f2937;">{{ number_format($hoursThisMonth, 1) }} hrs @if($otHrs > 0)<span style="color: #d97706; font-size: 11px;">({{ number_format($otHrs, 1) }} OT)</span>@endif</p>
                         </div>
                         <div>
                             <p style="margin: 0; font-size: 11px; color: #9ca3af; text-transform: uppercase;">Gross Pay</p>
@@ -146,7 +153,14 @@
                             $hoursThisMonth = \App\Models\TimeRecord::where('user_id', $employee->id)
                                 ->whereMonth('clock_in', now()->month)
                                 ->sum('hours_worked');
-                            $grossPay = $hoursThisMonth * $hourlyRate;
+                            // Calculate with overtime
+                            $workDays = now()->day;
+                            $maxRegularHours = $workDays * $regularHours;
+                            $regHrs = min($hoursThisMonth, $maxRegularHours);
+                            $otHrs = max(0, $hoursThisMonth - $maxRegularHours);
+                            $regularPay = $regHrs * $hourlyRate;
+                            $overtimePay = $otHrs * $hourlyRate * $otMultiplier;
+                            $grossPay = $regularPay + $overtimePay;
                             $deductions = $grossPay * ($deductionPct / 100);
                             $netPay = $grossPay - $deductions;
                         @endphp
@@ -162,8 +176,8 @@
                                     </div>
                                 </div>
                             </td>
-                            <td style="padding: 16px; font-size: 14px; color: #1f2937;">{{ number_format($hoursThisMonth, 1) }} hrs</td>
-                            <td style="padding: 16px; font-size: 14px; color: #1f2937;">₱{{ number_format($grossPay, 2) }}</td>
+                            <td style="padding: 16px; font-size: 14px; color: #1f2937;">{{ number_format($hoursThisMonth, 1) }} hrs @if($otHrs > 0)<span style="color: #d97706; font-size: 11px;">({{ number_format($otHrs, 1) }} OT)</span>@endif</td>
+                            <td style="padding: 16px; font-size: 14px; color: #1f2937;">₱{{ number_format($grossPay, 2) }} @if($overtimePay > 0)<span style="color: #d97706; font-size: 11px;">(+₱{{ number_format($overtimePay, 2) }} OT)</span>@endif</td>
                             <td style="padding: 16px; font-size: 14px; color: #ef4444;">-₱{{ number_format($deductions, 2) }}</td>
                             <td style="padding: 16px; font-size: 14px; font-weight: 700; color: #16a34a;">₱{{ number_format($netPay, 2) }}</td>
                             <td style="padding: 16px; text-align: center;">
@@ -368,14 +382,36 @@
                     const rateInput = document.getElementById('custom_rate');
                     const deductionInput = document.getElementById('custom_deduction');
                     
+                    // Get work days from date range
+                    const start = new Date(startDate);
+                    const end = new Date(endDate);
+                    let workDays = 0;
+                    for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+                        if (d.getDay() !== 0 && d.getDay() !== 6) workDays++;
+                    }
+                    const regularHoursPerDay = {{ $regularHours }};
+                    const otMultiplier = {{ $otMultiplier }};
+                    const maxRegularHours = workDays * regularHoursPerDay;
+                    
                     const updateCustomPreview = () => {
                         const hours = parseFloat(hoursInput.value) || 0;
                         const rate = parseFloat(rateInput.value) || 0;
                         const dedPct = parseFloat(deductionInput.value) || 0;
-                        const gross = hours * rate;
+                        
+                        // Calculate with overtime
+                        const regHrs = Math.min(hours, maxRegularHours);
+                        const otHrs = Math.max(0, hours - maxRegularHours);
+                        const regularPay = regHrs * rate;
+                        const overtimePay = otHrs * rate * otMultiplier;
+                        const gross = regularPay + overtimePay;
                         const ded = gross * (dedPct / 100);
                         const net = gross - ded;
-                        document.getElementById('custom_gross_preview').textContent = '₱' + gross.toLocaleString('en-PH', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+                        
+                        let grossText = '₱' + gross.toLocaleString('en-PH', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+                        if (otHrs > 0) {
+                            grossText += ' <span style="font-size:10px;color:#d97706;">(+₱' + overtimePay.toLocaleString('en-PH', {minimumFractionDigits: 2}) + ' OT)</span>';
+                        }
+                        document.getElementById('custom_gross_preview').innerHTML = grossText;
                         document.getElementById('custom_ded_preview').textContent = '-₱' + ded.toLocaleString('en-PH', {minimumFractionDigits: 2, maximumFractionDigits: 2});
                         document.getElementById('custom_net_preview').textContent = '₱' + net.toLocaleString('en-PH', {minimumFractionDigits: 2, maximumFractionDigits: 2});
                     };

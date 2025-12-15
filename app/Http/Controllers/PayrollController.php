@@ -11,13 +11,53 @@ use Carbon\Carbon;
 
 class PayrollController extends Controller
 {
+    /**
+     * Calculate pay with overtime
+     */
+    private function calculatePayWithOvertime($totalHours, $hourlyRate, $regularHoursPerDay, $otMultiplier, $workDays = null)
+    {
+        // If workDays not provided, estimate based on total hours
+        if ($workDays === null) {
+            $workDays = ceil($totalHours / $regularHoursPerDay);
+        }
+        
+        $maxRegularHours = $workDays * $regularHoursPerDay;
+        
+        if ($totalHours <= $maxRegularHours) {
+            // No overtime
+            return [
+                'regular_hours' => $totalHours,
+                'overtime_hours' => 0,
+                'regular_pay' => $totalHours * $hourlyRate,
+                'overtime_pay' => 0,
+                'gross_pay' => $totalHours * $hourlyRate
+            ];
+        }
+        
+        // Has overtime
+        $regularHours = $maxRegularHours;
+        $overtimeHours = $totalHours - $maxRegularHours;
+        $regularPay = $regularHours * $hourlyRate;
+        $overtimePay = $overtimeHours * $hourlyRate * $otMultiplier;
+        
+        return [
+            'regular_hours' => $regularHours,
+            'overtime_hours' => $overtimeHours,
+            'regular_pay' => $regularPay,
+            'overtime_pay' => $overtimePay,
+            'gross_pay' => $regularPay + $overtimePay
+        ];
+    }
+
     public function index()
     {
         $employees = User::where('role', 'Employee')->get();
         $hourlyRate = Setting::getHourlyRate();
         $deductionPct = Setting::getDeductionPercentage();
+        $regularHours = Setting::getRegularHoursPerDay();
+        $otMultiplier = Setting::getOvertimeMultiplier();
         
-        return view('payroll.index', compact('employees', 'hourlyRate', 'deductionPct'));
+        return view('payroll.index', compact('employees', 'hourlyRate', 'deductionPct', 'regularHours', 'otMultiplier'));
     }
 
     public function generate(Request $request)
@@ -31,13 +71,19 @@ class PayrollController extends Controller
 
         $hourlyRate = Setting::getHourlyRate();
         $deductionPct = Setting::getDeductionPercentage();
+        $regularHours = Setting::getRegularHoursPerDay();
+        $otMultiplier = Setting::getOvertimeMultiplier();
+
+        // Calculate work days in period
+        $workDays = $startDate->diffInWeekdays($endDate) + 1;
 
         foreach ($employees as $employee) {
             $hoursWorked = TimeRecord::where('user_id', $employee->id)
                 ->whereBetween('clock_in', [$startDate, $endDate])
                 ->sum('hours_worked');
 
-            $grossPay = $hoursWorked * $hourlyRate;
+            $payCalc = $this->calculatePayWithOvertime($hoursWorked, $hourlyRate, $regularHours, $otMultiplier, $workDays);
+            $grossPay = $payCalc['gross_pay'];
             $deductions = $grossPay * ($deductionPct / 100);
             $netPay = $grossPay - $deductions;
 
@@ -50,6 +96,10 @@ class PayrollController extends Controller
                     'gross_pay' => $grossPay,
                     'total_deductions' => $deductions,
                     'net_pay' => $netPay,
+                    'regular_hours' => $payCalc['regular_hours'],
+                    'overtime_hours' => $payCalc['overtime_hours'],
+                    'regular_pay' => $payCalc['regular_pay'],
+                    'overtime_pay' => $payCalc['overtime_pay'],
                     'status' => 'Pending',
                 ]);
                 $generated[] = $paycheck;
@@ -72,12 +122,18 @@ class PayrollController extends Controller
 
         $hourlyRate = Setting::getHourlyRate();
         $deductionPct = Setting::getDeductionPercentage();
+        $regularHours = Setting::getRegularHoursPerDay();
+        $otMultiplier = Setting::getOvertimeMultiplier();
+
+        // Calculate work days in period
+        $workDays = $startDate->diffInWeekdays($endDate) + 1;
 
         $hoursWorked = TimeRecord::where('user_id', $employee->id)
             ->whereBetween('clock_in', [$startDate, $endDate])
             ->sum('hours_worked');
 
-        $grossPay = $hoursWorked * $hourlyRate;
+        $payCalc = $this->calculatePayWithOvertime($hoursWorked, $hourlyRate, $regularHours, $otMultiplier, $workDays);
+        $grossPay = $payCalc['gross_pay'];
         $deductions = $grossPay * ($deductionPct / 100);
         $netPay = $grossPay - $deductions;
 
@@ -89,6 +145,10 @@ class PayrollController extends Controller
             'gross_pay' => $grossPay,
             'total_deductions' => $deductions,
             'net_pay' => $netPay,
+            'regular_hours' => $payCalc['regular_hours'],
+            'overtime_hours' => $payCalc['overtime_hours'],
+            'regular_pay' => $payCalc['regular_pay'],
+            'overtime_pay' => $payCalc['overtime_pay'],
             'status' => 'Pending',
         ]);
 
@@ -135,8 +195,14 @@ class PayrollController extends Controller
         $hoursWorked = (float) $request->hours;
         $hourlyRate = (float) $request->hourly_rate;
         $deductionPct = (float) $request->deduction_pct;
+        $regularHours = (float) ($request->regular_hours ?? Setting::getRegularHoursPerDay());
+        $otMultiplier = (float) ($request->ot_multiplier ?? Setting::getOvertimeMultiplier());
 
-        $grossPay = $hoursWorked * $hourlyRate;
+        // Calculate work days in period
+        $workDays = $startDate->diffInWeekdays($endDate) + 1;
+
+        $payCalc = $this->calculatePayWithOvertime($hoursWorked, $hourlyRate, $regularHours, $otMultiplier, $workDays);
+        $grossPay = $payCalc['gross_pay'];
         $deductions = $grossPay * ($deductionPct / 100);
         $netPay = $grossPay - $deductions;
 
@@ -148,6 +214,10 @@ class PayrollController extends Controller
             'gross_pay' => $grossPay,
             'total_deductions' => $deductions,
             'net_pay' => $netPay,
+            'regular_hours' => $payCalc['regular_hours'],
+            'overtime_hours' => $payCalc['overtime_hours'],
+            'regular_pay' => $payCalc['regular_pay'],
+            'overtime_pay' => $payCalc['overtime_pay'],
             'status' => 'Pending',
         ]);
 

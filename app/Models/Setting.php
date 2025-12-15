@@ -51,4 +51,28 @@ class Setting extends Model
     {
         return (float) self::get('deduction_percentage', 10);
     }
+
+    /**
+     * Get regular hours per day
+     */
+    public static function getRegularHoursPerDay()
+    {
+        return (float) self::get('regular_hours_per_day', 8);
+    }
+
+    /**
+     * Get overtime multiplier
+     */
+    public static function getOvertimeMultiplier()
+    {
+        return (float) self::get('overtime_multiplier', 1.25);
+    }
+
+    /**
+     * Check if time clock is enabled
+     */
+    public static function isTimeClockEnabled()
+    {
+        return self::get('time_clock_enabled', '1') === '1';
+    }
 }

@@ -128,12 +128,20 @@ class PaystubController extends Controller
                     </tr>
                 </thead>
                 <tbody>
-                    <tr>
-                        <td>Gross Pay</td>
-                        <td class="amount">₱' . number_format($paycheck->gross_pay, 2) . '</td>
+                    ' . ($paycheck->regular_pay > 0 ? '<tr>
+                        <td>Regular Pay (' . number_format($paycheck->regular_hours, 1) . ' hrs)</td>
+                        <td class="amount">₱' . number_format($paycheck->regular_pay, 2) . '</td>
+                    </tr>' : '') . '
+                    ' . ($paycheck->overtime_pay > 0 ? '<tr>
+                        <td>Overtime Pay (' . number_format($paycheck->overtime_hours, 1) . ' hrs)</td>
+                        <td class="amount" style="color: #d97706;">₱' . number_format($paycheck->overtime_pay, 2) . '</td>
+                    </tr>' : '') . '
+                    <tr style="background: #f9fafb;">
+                        <td style="font-weight: 600;">Gross Pay</td>
+                        <td class="amount" style="font-weight: 600;">₱' . number_format($paycheck->gross_pay, 2) . '</td>
                     </tr>
                     <tr>
-                        <td>Total Deductions (10%)</td>
+                        <td>Total Deductions</td>
                         <td class="amount deduction">-₱' . number_format($paycheck->total_deductions, 2) . '</td>
                     </tr>
                     <tr class="total-row">

@@ -1,22 +1,37 @@
 <div>
+    {{-- Time Clock Disabled Notice --}}
+    @if(!$timeClockEnabled)
+        <div style="background: #fef3c7; border: 1px solid #f59e0b; border-radius: 12px; padding: 16px; margin-bottom: 20px;">
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <i class="bi bi-exclamation-triangle" style="color: #d97706; font-size: 24px;"></i>
+                <div>
+                    <p style="margin: 0; font-size: 14px; font-weight: 600; color: #92400e;">Time Clock Disabled</p>
+                    <p style="margin: 4px 0 0 0; font-size: 13px; color: #a16207;">The time clock is currently disabled by the administrator. Please contact your manager.</p>
+                </div>
+            </div>
+        </div>
+    @endif
+
     {{-- Clock In/Out Card --}}
-    <div style="background: white; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); padding: 20px; margin-bottom: 20px;">
+    <div style="background: white; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); padding: 20px; margin-bottom: 20px; {{ !$timeClockEnabled ? 'opacity: 0.6;' : '' }}">
         <div style="display: flex; flex-direction: column; gap: 16px;">
             <div>
                 <h3 style="margin: 0; font-size: 18px; font-weight: 600; color: #1f2937;">Current Status</h3>
-                <p style="margin: 6px 0 0 0; font-size: 14px; color: #6b7280;">{{ $status }}</p>
+                <p style="margin: 6px 0 0 0; font-size: 14px; color: #6b7280;">{{ $timeClockEnabled ? $status : 'Time clock is disabled' }}</p>
             </div>
             
             <div>
                 @if(!$currentRecord || $currentRecord->clock_out)
                     <button wire:click="clockIn" 
-                            style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 14px 24px; background: #A99066; color: white; font-weight: 600; font-size: 16px; border: none; border-radius: 12px; cursor: pointer;">
+                            {{ !$timeClockEnabled ? 'disabled' : '' }}
+                            style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 14px 24px; background: {{ $timeClockEnabled ? '#A99066' : '#d1d5db' }}; color: white; font-weight: 600; font-size: 16px; border: none; border-radius: 12px; cursor: {{ $timeClockEnabled ? 'pointer' : 'not-allowed' }};">
                         <i class="bi bi-box-arrow-in-right"></i>
                         Clock In
                     </button>
                 @else
                     <button wire:click="clockOut" 
-                            style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 14px 24px; background: #dc2626; color: white; font-weight: 600; font-size: 16px; border: none; border-radius: 12px; cursor: pointer;">
+                            {{ !$timeClockEnabled ? 'disabled' : '' }}
+                            style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 14px 24px; background: {{ $timeClockEnabled ? '#dc2626' : '#d1d5db' }}; color: white; font-weight: 600; font-size: 16px; border: none; border-radius: 12px; cursor: {{ $timeClockEnabled ? 'pointer' : 'not-allowed' }};">
                         <i class="bi bi-box-arrow-right"></i>
                         Clock Out
                     </button>
